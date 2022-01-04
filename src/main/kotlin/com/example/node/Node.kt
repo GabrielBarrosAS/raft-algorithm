@@ -1,40 +1,89 @@
 package com.example.node
 
+import com.example.messaging.Producer
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.util.*
+import java.util.logging.Handler
 import kotlin.concurrent.thread
+import kotlin.random.Random
 
-enum class Tipo {
-    SEGUIDOR,
-    CANDIDATO,
-    LIDER
-}
+enum class Tipo { LIDER, CANDIDATO, SEGUIDOR }
 
 @Component
-class Node {
+@EnableScheduling
+class Node(
+
+    private val producer: Producer,
+
+    @Value("\${nome.instancia}")
+    val nomeInstancia: String = ""
+) {
+
+    fun novoTempoEspera(){
+        tempoInicial = System.currentTimeMillis();
+        tempoEspera = Random.nextLong(from = 15000, until = 30000)
+        fimEspera = false;
+    }
+
+    @Scheduled(fixedRate = 5000)
+    fun sinalAtividade(){
+        if(Tipo.LIDER == tipo){
+            producer.sinalAtividade(nomeInstancia,termo)
+        }
+    }
 
     private val log = LoggerFactory.getLogger(Node::class.java)
 
-    var id: String = ""
     var idLider: String = ""
     var quantidadeDeNos: Int = 4;
     var tipo: Tipo = Tipo.SEGUIDOR;
     var termo: Int = 0;
 
     var votosRecebidos: Int = 0
-    var votoEleicao: MutableMap<Int, Int> = mutableMapOf()
+    var votoEleicao: MutableMap<Int, Boolean> = mutableMapOf()
 
-    var tempoInicial: Int = 0;
-    var tempoEleicao: Int = 0;
-    var timeout = false;
-
+    @Volatile
+    var tempoInicial: Long = 0;
+    @Volatile
+    var tempoEspera: Long = 0;
+    @Volatile
+    var fimEspera = false;
 
     init {
         thread {
-            while (true){
-                log.info("Aqui")
-            }
-        }.start()
-    }
+            log.info(nomeInstancia + " esperando kafka por 90 segundos")
+            Thread.sleep(90000)
+            log.info(nomeInstancia + " iniciando")
+            kotlin.run {
+                novoTempoEspera()
+                while (true) {
+                    if (tipo != Tipo.LIDER) {
+                        while (!fimEspera) {
+                            if (System.currentTimeMillis() - tempoInicial >= tempoEspera) {
+                                fimEspera = true;
+                            }
+                        }
 
+                        log.info(tempoEspera.toString())
+                        novoTempoEspera()
+
+                        if(tipo != Tipo.LIDER) {
+                            termo += 1
+                            votosRecebidos = 1
+                            tipo = Tipo.CANDIDATO
+                            votoEleicao[termo] = true
+
+                            log.info(nomeInstancia + " iniciando votação");
+
+                            producer.iniciarEleicao(nomeInstancia, termo);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

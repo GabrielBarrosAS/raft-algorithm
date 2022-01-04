@@ -4,18 +4,20 @@ services:
   zookeeper:
     container_name: zookeeper
     image: bitnami/zookeeper:latest
+    logging:
+      driver: none
     environment:
       ALLOW_ANONYMOUS_LOGIN: 'yes'
     ports:
       - "2181:2181"
-    networks:
-      kafka-net:
     volumes:
       - zookeeper-persistence:/bitnami/zookeeper
 
   kafka:
     container_name: kafka
     image: bitnami/kafka:latest
+    logging:
+      driver: none
     environment:
       ALLOW_PLAINTEXT_LISTENER: 'yes'
       KAFKA_ADVERTISED_HOST_NAME: kafka
@@ -28,16 +30,54 @@ services:
       - "9092:9092"
     expose:
       - "9093"
-    networks:
-      kafka-net:
-    depends_on:
-      - zookeeper
     volumes:
       - kafka-persistence:/bitnami/kafka
+    depends_on:
+      - zookeeper
 
+  replica_1:
+    container_name: replica_1
+    build:
+      context: .
+    depends_on:
+      - kafka
+    links:
+      - "kafka:kafka"
+    environment:
+      CONTAINER_NAME: replica_1
+
+  replica_2:
+    container_name: replica_2
+    build:
+      context: .
+    depends_on:
+      - kafka
+    links:
+      - "kafka:kafka"
+    environment:
+      CONTAINER_NAME: replica_2
+
+  replica_3:
+    container_name: replica_3
+    build:
+      context: .
+    depends_on:
+      - kafka
+    links:
+      - "kafka:kafka"
+    environment:
+      CONTAINER_NAME: replica_3
+
+  replica_4:
+    container_name: replica_4
+    build:
+      context: .
+    depends_on:
+      - kafka
+    links:
+      - "kafka:kafka"
+    environment:
+      CONTAINER_NAME: replica_4
 volumes:
   kafka-persistence:
   zookeeper-persistence:
-
-networks:
-  kafka-net:
