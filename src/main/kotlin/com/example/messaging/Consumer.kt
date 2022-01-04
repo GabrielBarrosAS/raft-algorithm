@@ -24,41 +24,31 @@ class Consumer (
     @KafkaListener(topics = ["nova-eleicao"])
     fun novaEleicao(@Payload payload: String){
         node.novoTempoEspera()
-        val candidato:Candidato = jacksonObjectMapper().readValue(payload);
+        val candidato:Candidato = jacksonObjectMapper().readValue(payload)
         if(node.nomeInstancia != candidato.nomeInstancia) {
-
             if(node.votoEleicao[candidato.termo] == null){
-
-                node.votoEleicao[candidato.termo] = true;
+                node.votoEleicao[candidato.termo] = true
                 node.termo+=1
-
-                log.info(node.nomeInstancia + " votando em -> " + candidato.nomeInstancia)
-
-                producer.votar(NovoVoto(candidato.nomeInstancia, node.nomeInstancia));
+                log.info(node.nomeInstancia + " -> VOTANDO EM -> " + candidato.nomeInstancia)
+                producer.votar(NovoVoto(candidato.nomeInstancia, node.nomeInstancia))
             }else{
-                log.info(node.nomeInstancia + " já votou na eleição " + node.termo)
+                log.info(node.nomeInstancia + " -> JA VOTOU -> ELEICAO " + node.termo)
             }
         }
     }
 
     @KafkaListener(topics = ["novo-voto"])
     fun novoVoto(@Payload payload: String){
-        node.novoTempoEspera();
-        val novoVoto:NovoVoto = jacksonObjectMapper().readValue(payload);
+        node.novoTempoEspera()
+        val novoVoto:NovoVoto = jacksonObjectMapper().readValue(payload)
         if(novoVoto.nomeCandidato == node.nomeInstancia){
-
-            log.info(node.nomeInstancia + " recebeu o voto -> " + novoVoto.nomeEleitor);
-
+            log.info(node.nomeInstancia + " -> RECEBENDO VOTO -> " + novoVoto.nomeEleitor)
             node.votosRecebidos+=1
-
             if(node.votosRecebidos > (node.quantidadeDeNos / 2)){
-
-                node.tipo = Tipo.LIDER;
+                node.tipo = Tipo.LIDER
                 node.idLider = node.nomeInstancia
-                log.info(node.nomeInstancia + " fui eleito novo lider")
-
-                producer.infoNovoLider(NovoLiderEleito(node.termo,node.nomeInstancia));
-
+                log.info(node.nomeInstancia + " -> FUI ELEITO LIDER")
+                producer.infoNovoLider(NovoLiderEleito(node.termo,node.nomeInstancia))
             } else{
                 node.novoTempoEspera()
             }
@@ -67,11 +57,11 @@ class Consumer (
 
     @KafkaListener(topics = ["info-novo-lider"])
     fun infoNovoLider(@Payload payload: String){
-        val novoLiderEleito:NovoLiderEleito = jacksonObjectMapper().readValue(payload);
+        val novoLiderEleito:NovoLiderEleito = jacksonObjectMapper().readValue(payload)
         if (node.nomeInstancia != novoLiderEleito.nomeLider){
             node.novoTempoEspera()
             if(node.tipo != Tipo.LIDER || novoLiderEleito.termo > node.termo){
-                log.info(node.nomeInstancia + " -> novo lider é " + novoLiderEleito.nomeLider)
+                log.info(node.nomeInstancia + " -> NOVO LIDER -> " + novoLiderEleito.nomeLider)
                 node.idLider = novoLiderEleito.nomeLider
                 node.termo = novoLiderEleito.termo
                 node.tipo = Tipo.SEGUIDOR
@@ -84,10 +74,11 @@ class Consumer (
         val sinalAtividade: SinalAtividade = jacksonObjectMapper().readValue(payload)
         if(sinalAtividade.nomeInstancia != node.nomeInstancia){
             if(node.termo < sinalAtividade.termo){
-                log.info(node.nomeInstancia + " -> novo lider " + sinalAtividade.nomeInstancia)
+                log.info(node.nomeInstancia + " -> NOVO LIDER -> " + sinalAtividade.nomeInstancia
+                        + " -> NOVO TERMO -> " + sinalAtividade.termo)
                 node.idLider = sinalAtividade.nomeInstancia
                 node.termo = sinalAtividade.termo
-                node.tipo = Tipo.SEGUIDOR;
+                node.tipo = Tipo.SEGUIDOR
             }else{
                 log.info(sinalAtividade.nomeInstancia + " ainda está ativo!")
             }

@@ -24,7 +24,7 @@ class Producer (
     }
 
     fun infoNovoLider(novoLiderEleito: NovoLiderEleito){
-        val payload = jacksonObjectMapper().writeValueAsString(novoLiderEleito);
+        val payload = jacksonObjectMapper().writeValueAsString(novoLiderEleito)
         kafkaTemplate.send("info-novo-lider",payload)
     }
 
