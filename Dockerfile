@@ -1,4 +1,4 @@
 FROM openjdk:11
-ARG JAR_FILE=raft-0.0.1-SNAPSHOT.jar
-COPY ${JAR_FILE} app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
+WORKDIR /opt/app
+RUN git clone https://github.com/GabrielBarrosAS/raft-algorithm.git /opt/app
+ENTRYPOINT ["java","-jar","raft-0.0.1-SNAPSHOT.jar"]

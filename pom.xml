@@ -55,6 +55,7 @@
 	<build>
 		<sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
 		<testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
+		<finalName>raft-0.0.1-SNAPSHOT</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -65,6 +66,9 @@
 				</configuration>
 				<executions>
 					<execution>
+						<configuration>
+							<mainClass>com.example.RaftAlgorithmApplicationKt</mainClass>
+						</configuration>
 						<goals>
 							<goal>repackage</goal>
 						</goals>
